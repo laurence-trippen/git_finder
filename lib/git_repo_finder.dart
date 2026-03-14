@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:logging/logging.dart';
+
+final _log = Logger('GitRepoFinder');
 
 /// Finds Git repositories within a specified directory.
 class GitRepoFinder {
@@ -51,6 +54,7 @@ class GitRepoFinder {
           if (dirName == '.git') {
             // Add the parent directory as a repository
             repositories.add(dir.path);
+            _log.fine('Found repository: ${dir.path}');
             // Don't search inside .git directories
             continue;
           }
@@ -74,6 +78,7 @@ class GitRepoFinder {
       }
     } catch (e) {
       // Skip directories we don't have permission to access
+      _log.warning('Cannot access directory ${dir.path}: $e');
     }
   }
 }

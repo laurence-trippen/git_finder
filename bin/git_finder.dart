@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chalkdart/chalkstrings.dart';
+import 'package:logging/logging.dart';
 
 import 'package:git_finder/git.dart';
 import 'package:git_finder/git_repo_finder.dart';
@@ -9,8 +10,11 @@ import 'package:git_finder/path.dart';
 
 import 'sys_exit.dart';
 
+final _log = Logger('GitFinder');
+
 void main(List<String> arguments) async {
   setupLogger();
+  _log.info('Git Finder started with ${arguments.length} path(s): $arguments');
 
   print(" Git Finder ".white.onYellow);
   print("");
@@ -39,6 +43,7 @@ void main(List<String> arguments) async {
 
   // Resolve colliding paths to highest folder
   final optimizedSearchPaths = resolvePathIntersections(arguments);
+  _log.info('Path optimization: ${arguments.length} -> ${optimizedSearchPaths.length} paths');
 
   print("Optimized to ${optimizedSearchPaths.length} path(s) after removing subdirectories".cyan);
   print("");
@@ -52,9 +57,11 @@ void main(List<String> arguments) async {
       try {
         print("Scanning: $path".blue);
         final repos = await gitRepoFinder.findRepositories(path);
+        _log.info('Found ${repos.length} repositories in $path');
         print("  ✓ Found ${repos.length} repository/repositories".green);
         return (path: path, repos: repos, error: null);
       } catch (e) {
+        _log.warning('Failed to scan $path: $e');
         print("  ✗ Error: $e".red);
         return (path: path, repos: <String>[], error: e.toString());
       }
@@ -96,9 +103,15 @@ void main(List<String> arguments) async {
     final repoStatuses = <({String path, bool hasUncommitted, bool hasUnpushed, bool hasRemote})>[];
     const batchSize = 20; // Process 20 repositories at a time
 
+    _log.info('Analyzing ${allRepos.length} repositories in batches of $batchSize');
+
     for (var i = 0; i < allRepos.length; i += batchSize) {
       final end = (i + batchSize < allRepos.length) ? i + batchSize : allRepos.length;
       final batch = allRepos.sublist(i, end);
+      final batchNumber = (i ~/ batchSize) + 1;
+      final totalBatches = (allRepos.length / batchSize).ceil();
+
+      _log.fine('Processing batch $batchNumber/$totalBatches (${batch.length} repos)');
 
       // Check each repository in the batch for uncommitted changes, unpushed commits, and remote configuration
       final batchResults = await Future.wait(
@@ -149,6 +162,8 @@ void main(List<String> arguments) async {
     final uncommittedRepos = repoStatuses.where((s) => s.hasRemote && s.hasUncommitted && !s.hasUnpushed).length;
     final unpushedRepos = repoStatuses.where((s) => s.hasRemote && s.hasUnpushed).length;
 
+    _log.info('Analysis complete: $cleanRepos clean, $uncommittedRepos uncommitted, $unpushedRepos unpushed, $noRemoteRepos no remote');
+
     print("Status Summary:".whiteBright);
     print("  ✓ Clean: $cleanRepos".green);
     print("  ○ Uncommitted changes: $uncommittedRepos".yellow);
@@ -159,6 +174,8 @@ void main(List<String> arguments) async {
   }
 
   print("done!");
+
+  _log.info('Git Finder completed successfully');
 
   // Close logger and flush logs to file
   await closeLogger();

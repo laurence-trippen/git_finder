@@ -20,7 +20,11 @@ void setupLogger({bool enableFileLogging = true}) {
       }
 
       // Create log file with timestamp
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')
+          .first;
       final logFilePath = p.join('logs', 'git_finder_$timestamp.log');
       final logFile = File(logFilePath);
 
@@ -47,14 +51,14 @@ void setupLogger({bool enableFileLogging = true}) {
     }
 
     // Only print to console for WARNING and above (not DEBUG, INFO, etc.)
-    if (record.level >= Level.WARNING) {
-      print(logMessage);
+    // if (record.level >= Level.WARNING) {
+    //   print(logMessage);
 
-      final shouldPrintStackTrace = record.level == Level.SEVERE;
-      if (shouldPrintStackTrace && record.stackTrace != null) {
-        print(record.stackTrace);
-      }
-    }
+    //   final shouldPrintStackTrace = record.level == Level.SEVERE;
+    //   if (shouldPrintStackTrace && record.stackTrace != null) {
+    //     print(record.stackTrace);
+    //   }
+    // }
   });
 
   _isSetup = true;

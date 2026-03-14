@@ -1,12 +1,21 @@
 import 'dart:io';
+import 'package:logging/logging.dart';
+
+final _log = Logger('Git');
 
 /// Checks if Git is installed on the system (macOS, Linux, or Windows).
 /// Returns true if Git is available, false otherwise.
 Future<bool> checkGitInstalled() async {
   try {
     final result = await Process.run('git', ['--version']);
-    return result.exitCode == 0;
+    if (result.exitCode == 0) {
+      _log.info('Git found: ${result.stdout.toString().trim()}');
+      return true;
+    }
+    _log.warning('Git check failed with exit code ${result.exitCode}');
+    return false;
   } catch (e) {
+    _log.severe('Git check failed with exception: $e');
     return false;
   }
 }
@@ -24,6 +33,10 @@ Future<bool> hasUncommittedChanges(String repositoryPath) async {
     );
 
     if (result.exitCode != 0) {
+      final stderr = (result.stderr as String).trim();
+      if (stderr.isNotEmpty) {
+        _log.warning('git status failed for $repositoryPath: $stderr');
+      }
       return false;
     }
 
@@ -31,6 +44,7 @@ Future<bool> hasUncommittedChanges(String repositoryPath) async {
     final output = (result.stdout as String).trim();
     return output.isNotEmpty;
   } catch (e) {
+    _log.warning('git status exception for $repositoryPath: $e');
     return false;
   }
 }
@@ -51,6 +65,8 @@ Future<bool> hasUnpushedCommits(String repositoryPath) async {
 
     if (result.exitCode != 0) {
       // No upstream branch configured or other error
+      // This is expected for repos without upstream, so only log at fine level
+      _log.fine('No upstream configured for $repositoryPath');
       return false;
     }
 
@@ -58,6 +74,7 @@ Future<bool> hasUnpushedCommits(String repositoryPath) async {
     final count = int.tryParse(output) ?? 0;
     return count > 0;
   } catch (e) {
+    _log.warning('git rev-list exception for $repositoryPath: $e');
     return false;
   }
 }
@@ -75,6 +92,10 @@ Future<bool> hasRemote(String repositoryPath) async {
     );
 
     if (result.exitCode != 0) {
+      final stderr = (result.stderr as String).trim();
+      if (stderr.isNotEmpty) {
+        _log.warning('git remote failed for $repositoryPath: $stderr');
+      }
       return false;
     }
 
@@ -82,6 +103,7 @@ Future<bool> hasRemote(String repositoryPath) async {
     final output = (result.stdout as String).trim();
     return output.isNotEmpty;
   } catch (e) {
+    _log.warning('git remote exception for $repositoryPath: $e');
     return false;
   }
 }
