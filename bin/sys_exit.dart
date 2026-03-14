@@ -1,6 +1,9 @@
 enum SysExit {
   // Git Errors (200)
-  gitNotFound(code: 200, displayMessage: "git not found!");
+  gitNotFound(code: 200, displayMessage: "git not found!"),
+
+  // Argument Errors (100)
+  noPathsProvided(code: 100, displayMessage: "No paths provided!");
 
   const SysExit({
     required this.code,
