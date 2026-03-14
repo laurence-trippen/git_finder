@@ -92,20 +92,31 @@ void main(List<String> arguments) async {
     print("Analyzing repositories...".cyan);
     print("");
 
-    // Check each repository for uncommitted changes, unpushed commits, and remote configuration
-    final repoStatuses = await Future.wait(
-      allRepos.map((repo) async {
-        final hasUncommitted = await hasUncommittedChanges(repo);
-        final hasUnpushed = await hasUnpushedCommits(repo);
-        final hasRemoteConfigured = await hasRemote(repo);
-        return (
-          path: repo,
-          hasUncommitted: hasUncommitted,
-          hasUnpushed: hasUnpushed,
-          hasRemote: hasRemoteConfigured,
-        );
-      }).toList(),
-    );
+    // Process repositories in batches to avoid "Too many open files" error
+    final repoStatuses = <({String path, bool hasUncommitted, bool hasUnpushed, bool hasRemote})>[];
+    const batchSize = 20; // Process 20 repositories at a time
+
+    for (var i = 0; i < allRepos.length; i += batchSize) {
+      final end = (i + batchSize < allRepos.length) ? i + batchSize : allRepos.length;
+      final batch = allRepos.sublist(i, end);
+
+      // Check each repository in the batch for uncommitted changes, unpushed commits, and remote configuration
+      final batchResults = await Future.wait(
+        batch.map((repo) async {
+          final hasUncommitted = await hasUncommittedChanges(repo);
+          final hasUnpushed = await hasUnpushedCommits(repo);
+          final hasRemoteConfigured = await hasRemote(repo);
+          return (
+            path: repo,
+            hasUncommitted: hasUncommitted,
+            hasUnpushed: hasUnpushed,
+            hasRemote: hasRemoteConfigured,
+          );
+        }).toList(),
+      );
+
+      repoStatuses.addAll(batchResults);
+    }
 
     print("Repository Status:".whiteBright);
     print("");
