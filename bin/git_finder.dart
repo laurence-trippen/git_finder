@@ -159,4 +159,7 @@ void main(List<String> arguments) async {
   }
 
   print("done!");
+
+  // Close logger and flush logs to file
+  await closeLogger();
 }
