@@ -95,28 +95,28 @@ void main() {
     });
   });
 
-  group('resolvePathIntersection', () {
+  group('resolvePathIntersections', () {
     test('returns empty list for empty input', () {
-      expect(resolvePathIntersection([]), isEmpty);
+      expect(resolvePathIntersections([]), isEmpty);
     });
 
     test('returns single path unchanged', () {
       final paths = ['/Users/laurence'];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(1));
       expect(result.first, equals(p.normalize(p.absolute('/Users/laurence'))));
     });
 
     test('removes subdirectory when parent is present', () {
       final paths = ['/Users/laurence', '/Users/laurence/home'];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(1));
       expect(result.first, equals(p.normalize(p.absolute('/Users/laurence'))));
     });
 
     test('keeps both paths when neither is a subdirectory', () {
       final paths = ['/Users/laurence', '/Users/work'];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(2));
     });
 
@@ -127,7 +127,7 @@ void main() {
         '/Users/laurence/home/documents',
         '/Users/work',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(2));
       expect(
         result,
@@ -145,7 +145,7 @@ void main() {
         '/a/b/c',
         '/x/y/z',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(2));
       expect(
         result,
@@ -162,7 +162,7 @@ void main() {
         '/Users/laurence',
         '/Users/laurence',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(1));
     });
 
@@ -173,7 +173,7 @@ void main() {
         '/Users/laurence',
         '/Users/laurence/home',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(2));
       expect(
         result,
@@ -189,7 +189,7 @@ void main() {
         '/Users/laurence/',
         '/Users/laurence/home/',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(1));
     });
 
@@ -198,7 +198,7 @@ void main() {
         'test',
         'test/fixtures',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(1));
     });
 
@@ -209,7 +209,7 @@ void main() {
         '/var/log',
         '/tmp/data',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(4));
     });
 
@@ -222,7 +222,7 @@ void main() {
         '/x',
         '/a/b/e',
       ];
-      final result = resolvePathIntersection(paths);
+      final result = resolvePathIntersections(paths);
       expect(result.length, equals(2));
       expect(
         result,

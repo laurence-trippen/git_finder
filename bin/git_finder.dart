@@ -5,6 +5,7 @@ import 'package:chalkdart/chalkstrings.dart';
 import 'package:git_finder/git.dart';
 import 'package:git_finder/git_repo_finder.dart';
 import 'package:git_finder/logger.dart';
+import 'package:git_finder/path.dart';
 
 import 'sys_exit.dart';
 
@@ -14,7 +15,7 @@ void main(List<String> arguments) async {
   print(" Git Finder ".white.onYellow);
   print("");
 
-  final isGitInstalled  = await checkGitInstalled();
+  final isGitInstalled = await checkGitInstalled();
 
   if (!isGitInstalled) {
     const sysExitCode = SysExit.gitNotFound;
@@ -36,30 +37,64 @@ void main(List<String> arguments) async {
   print("Searching in ${arguments.length} path(s)...".cyan);
   print("");
 
+  // Resolve colliding paths to highest folder
+  final optimizedSearchPaths = resolvePathIntersections(arguments);
+
+  print("Optimized to ${optimizedSearchPaths.length} path(s) after removing subdirectories".cyan);
+  print("");
+
+  // As paths are not colliding anymore its safe to start parallel reads
   final gitRepoFinder = GitRepoFinder();
-  final allRepos = <String>[];
 
-  // Search each provided path
-  for (final path in arguments) {
-    print("Scanning: $path".blue);
+  // Execute all searches in parallel and capture successes and failures
+  final results = await Future.wait(
+    optimizedSearchPaths.map((path) async {
+      try {
+        print("Scanning: $path".blue);
+        final repos = await gitRepoFinder.findRepositories(path);
+        print("  ✓ Found ${repos.length} repository/repositories".green);
+        return (path: path, repos: repos, error: null);
+      } catch (e) {
+        print("  ✗ Error: $e".red);
+        return (path: path, repos: <String>[], error: e.toString());
+      }
+    }).toList(),
+  );
 
-    try {
-      final repos = await gitRepoFinder.findRepositories(path);
-      allRepos.addAll(repos);
-      print("  Found ${repos.length} repository/repositories".green);
-    } catch (e) {
-      print("  Error: $e".red);
+  print("");
+
+  // Separate successful and failed results
+  final successful = results.where((r) => r.error == null).toList();
+  final failed = results.where((r) => r.error != null).toList();
+
+  // Flatten all successfully found repositories
+  final allRepos = successful.expand((r) => r.repos).toList();
+
+  print("=" * 50);
+  print("Summary:".whiteBright);
+  print("  Paths searched: ${results.length}".white);
+  print("  Successful: ${successful.length}".green);
+  print("  Failed: ${failed.length}".red);
+  print("  Total repositories found: ${allRepos.length}".greenBright);
+  print("=" * 50);
+  print("");
+
+  if (failed.isNotEmpty) {
+    print("Failed paths:".red);
+    for (final result in failed) {
+      print("  ✗ ${result.path}".red);
+      print("    ${result.error}".redBright);
     }
     print("");
   }
 
-  print("="*50);
-  print("Total: ${allRepos.length} repositories found".greenBright);
-  print("="*50);
-  print("");
-
-  for (final repo in allRepos) {
-    print(repo);
+  if (allRepos.isNotEmpty) {
+    print("Found repositories:".greenBright);
+    for (final repo in allRepos) {
+      print("  $repo");
+    }
+  } else {
+    print("No repositories found.".yellow);
   }
 
   print("done!");

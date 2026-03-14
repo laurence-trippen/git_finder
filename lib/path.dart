@@ -14,15 +14,18 @@ import 'package:path/path.dart' as p;
 /// ```
 ///
 /// The function is cross-platform compatible (works with Windows and Unix paths).
-List<String> resolvePathIntersection(List<String> paths) {
+List<String> resolvePathIntersections(List<String> paths) {
   if (paths.isEmpty) {
     return [];
   }
 
   // Normalize all paths to absolute paths
-  final normalizedPaths = paths.map((path) {
-    return p.normalize(p.absolute(path));
-  }).toSet().toList(); // Use Set to remove exact duplicates
+  final normalizedPaths = paths
+      .map((path) {
+        return p.normalize(p.absolute(path));
+      })
+      .toSet()
+      .toList(); // Use Set to remove exact duplicates
 
   // Sort paths by length (shorter paths first)
   // This ensures parent directories are processed before their children
@@ -52,10 +55,7 @@ List<String> resolvePathIntersection(List<String> paths) {
 
 /// Checks if [child] is a subdirectory of [parent].
 /// Works cross-platform (Windows and Unix).
-bool isSubdirectoryOf({
-  required String child,
-  required String parent,
- }) {
+bool isSubdirectoryOf({required String child, required String parent}) {
   // Normalize both paths
   final normalizedChild = p.normalize(child);
   final normalizedParent = p.normalize(parent);
