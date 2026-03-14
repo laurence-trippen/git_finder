@@ -89,10 +89,52 @@ void main(List<String> arguments) async {
   }
 
   if (allRepos.isNotEmpty) {
-    print("Found repositories:".greenBright);
-    for (final repo in allRepos) {
-      print("  $repo");
+    print("Analyzing repositories...".cyan);
+    print("");
+
+    // Check each repository for uncommitted changes and unpushed commits
+    final repoStatuses = await Future.wait(
+      allRepos.map((repo) async {
+        final hasUncommitted = await hasUncommittedChanges(repo);
+        final hasUnpushed = await hasUnpushedCommits(repo);
+        return (
+          path: repo,
+          hasUncommitted: hasUncommitted,
+          hasUnpushed: hasUnpushed,
+        );
+      }).toList(),
+    );
+
+    print("Repository Status:".whiteBright);
+    print("");
+
+    for (final status in repoStatuses) {
+      if (status.hasUnpushed) {
+        // Unpushed commits = red (most critical)
+        print("  ⚠ ${status.path}".red);
+        print("    unpushed commits".red);
+      } else if (status.hasUncommitted) {
+        // Uncommitted changes = yellow
+        print("  ○ ${status.path}".yellow);
+        print("    uncommitted changes".yellow);
+      } else {
+        // All OK = green
+        print("  ✓ ${status.path}".green);
+        print("    clean".green);
+      }
     }
+
+    print("");
+
+    // Summary statistics
+    final cleanRepos = repoStatuses.where((s) => !s.hasUncommitted && !s.hasUnpushed).length;
+    final uncommittedRepos = repoStatuses.where((s) => s.hasUncommitted && !s.hasUnpushed).length;
+    final unpushedRepos = repoStatuses.where((s) => s.hasUnpushed).length;
+
+    print("Status Summary:".whiteBright);
+    print("  ✓ Clean: $cleanRepos".green);
+    print("  ○ Uncommitted changes: $uncommittedRepos".yellow);
+    print("  ⚠ Unpushed commits: $unpushedRepos".red);
   } else {
     print("No repositories found.".yellow);
   }
