@@ -92,15 +92,17 @@ void main(List<String> arguments) async {
     print("Analyzing repositories...".cyan);
     print("");
 
-    // Check each repository for uncommitted changes and unpushed commits
+    // Check each repository for uncommitted changes, unpushed commits, and remote configuration
     final repoStatuses = await Future.wait(
       allRepos.map((repo) async {
         final hasUncommitted = await hasUncommittedChanges(repo);
         final hasUnpushed = await hasUnpushedCommits(repo);
+        final hasRemoteConfigured = await hasRemote(repo);
         return (
           path: repo,
           hasUncommitted: hasUncommitted,
           hasUnpushed: hasUnpushed,
+          hasRemote: hasRemoteConfigured,
         );
       }).toList(),
     );
@@ -109,7 +111,11 @@ void main(List<String> arguments) async {
     print("");
 
     for (final status in repoStatuses) {
-      if (status.hasUnpushed) {
+      if (!status.hasRemote) {
+        // No remote = red (critical - isolated repo)
+        print("  ⚠ ${status.path}".red);
+        print("    no remote configured".red);
+      } else if (status.hasUnpushed) {
         // Unpushed commits = red (most critical)
         print("  ⚠ ${status.path}".red);
         print("    unpushed commits".red);
@@ -127,14 +133,16 @@ void main(List<String> arguments) async {
     print("");
 
     // Summary statistics
-    final cleanRepos = repoStatuses.where((s) => !s.hasUncommitted && !s.hasUnpushed).length;
-    final uncommittedRepos = repoStatuses.where((s) => s.hasUncommitted && !s.hasUnpushed).length;
-    final unpushedRepos = repoStatuses.where((s) => s.hasUnpushed).length;
+    final noRemoteRepos = repoStatuses.where((s) => !s.hasRemote).length;
+    final cleanRepos = repoStatuses.where((s) => s.hasRemote && !s.hasUncommitted && !s.hasUnpushed).length;
+    final uncommittedRepos = repoStatuses.where((s) => s.hasRemote && s.hasUncommitted && !s.hasUnpushed).length;
+    final unpushedRepos = repoStatuses.where((s) => s.hasRemote && s.hasUnpushed).length;
 
     print("Status Summary:".whiteBright);
     print("  ✓ Clean: $cleanRepos".green);
     print("  ○ Uncommitted changes: $uncommittedRepos".yellow);
     print("  ⚠ Unpushed commits: $unpushedRepos".red);
+    print("  ⚠ No remote configured: $noRemoteRepos".red);
   } else {
     print("No repositories found.".yellow);
   }

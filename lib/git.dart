@@ -61,3 +61,27 @@ Future<bool> hasUnpushedCommits(String repositoryPath) async {
     return false;
   }
 }
+
+/// Checks if the Git repository at [repositoryPath] has any remote configured.
+/// Returns true if at least one remote exists, false otherwise.
+///
+/// Uses `git remote` to list all configured remotes.
+Future<bool> hasRemote(String repositoryPath) async {
+  try {
+    final result = await Process.run(
+      'git',
+      ['remote'],
+      workingDirectory: repositoryPath,
+    );
+
+    if (result.exitCode != 0) {
+      return false;
+    }
+
+    // If output is not empty, there is at least one remote
+    final output = (result.stdout as String).trim();
+    return output.isNotEmpty;
+  } catch (e) {
+    return false;
+  }
+}
