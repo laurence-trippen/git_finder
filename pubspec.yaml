@@ -1,12 +1,10 @@
 name: git_finder
-description: A sample command-line application.
+description: A console application which finds Git repositories with un-commited or un-pushed changes.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
-
+repository: https://github.com/laurence-trippen/git_finder
 environment:
   sdk: ^3.8.1
 
-# Add regular dependencies here.
 dependencies:
   path: ^1.8.0
 

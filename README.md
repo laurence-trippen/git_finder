@@ -1,2 +1,3 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+# Git Finder
+
+A console application which finds Git repositories with un-commited or un-pushed changes.
